@@ -101,7 +101,7 @@ const useStyles = makeStyles((theme: Theme) =>
     }),
 );
 
-export default function Home() {
+export default withRouter(function Home() {
     const classes = useStyles();
     const theme = globalTheme;
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -125,12 +125,14 @@ export default function Home() {
     };
 
     const logout = () => {
-        localStorage.removeItem('kafka-broker-user');
-        localStorage.removeItem('kafka-broker-pwd');
+        localStorage.removeItem('token');
     }
 
     const loggedIn = () => {
-        return false;
+        if(localStorage.getItem("token"))
+            return true
+        else
+            return false;
     }
 
     const renderMenu = (
@@ -150,7 +152,6 @@ export default function Home() {
     return (
         <ThemeProvider theme={theme}>
             <div className={classes.root}>
-                <Router>
                     <CssBaseline />
                     <AppBar
                         position="fixed"
@@ -218,7 +219,7 @@ export default function Home() {
                         <div className={classes.drawerHeader} />
                         <Switch>
                             <Route path="/dashboard" >
-                                {loggedIn ? <Redirect to="/login" /> : <Dashboard />}
+                                {!loggedIn() ? <Redirect to="/login" /> : <Dashboard />}
                             </Route>
                             <Route path="/login" component={Login} />
                             <Route exact path="/">
@@ -230,8 +231,7 @@ export default function Home() {
                             </Route>
                         </Switch>
                     </main>
-                </Router>
             </div>
         </ThemeProvider>
     );
-};
+});

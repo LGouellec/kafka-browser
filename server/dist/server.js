@@ -17,49 +17,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const body_parser_1 = __importDefault(require("body-parser"));
 const express_1 = __importDefault(require("express"));
 const LoginController_1 = __importDefault(require("./controllers/LoginController"));
+const TopicController_1 = __importDefault(require("./controllers/TopicController"));
+const Middleware_1 = __importDefault(require("./middlewares/Middleware"));
 const app = express_1.default();
 const port = process.env.PORT || 5000;
+const login = new LoginController_1.default();
+const topic = new TopicController_1.default();
 app.use(body_parser_1.default.json());
 app.use(body_parser_1.default.urlencoded({ extended: true }));
-// const kafka = new Kafka({
-//   clientId: "kafka-node-test",
-//   brokers: ["192.168.56.1:9092"],
-//   sasl: {
-//     mechanism: "scram-sha-512",
-//     password: "Michelin/1",
-//     username: "admin"
-//   },
-// });
-// const admin = kafka.admin();
-// const adminConsole = async () => {
-//   await admin.connect();
-//   const topics = await admin.fetchTopicMetadata({topics: undefined});
-//   topics.topics.forEach((t) => {
-//     console.log(t.name);
-//   });
-// };
-// adminConsole();
-// const producer = kafka.producer();
-// const getRandomNumber = () => Math.round(Math.random() * 1000);
-// const createMessage = (num: number) => ({
-//   key: `key-${num}`,
-//   value: `value-${num}-${new Date().toISOString()}`,
-// });
-// const connect = async function() {
-//   await producer.connect();
-// };
-// connect();
-// app.get("/api/send", async (req, res) => {
-//   producer.send({
-//     topic: "kafka-browser",
-//     messages: [createMessage(getRandomNumber())]
-//   })
-//     .then(console.log)
-//     .catch((e) => console.error(`[example/producer] ${e.message}`, e));
-//   res.send("Message sent !");
-// });
-const login = new LoginController_1.default();
-app.get("/api/coucou", login.login);
+Middleware_1.default(app);
+app.get("/api/login", login.login);
+app.get("/api/refresh", login.refresh);
+app.get("/api/topics", topic.getTopics);
+app.get("/api/topics/:topicName/config", topic.getConfig);
+app.get("/api/topics/:topicName/offsets", topic.getOffsets);
 app.listen(port, () => console.log(`Listening on port ${port}`));
 const errorTypes = ["unhandledRejection", "uncaughtException"];
 const signalTraps = ["SIGTERM", "SIGINT", "SIGUSR2"];
@@ -68,7 +39,6 @@ errorTypes.map((type) => {
         try {
             console.log(`process.on ${type}`);
             console.error(e);
-            // await consumer.disconnect()
             process.exit(0);
         }
         catch (_) {
@@ -79,7 +49,6 @@ errorTypes.map((type) => {
 signalTraps.map((type) => {
     process.once(type, () => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            // await consumer.disconnect()
         }
         finally {
             process.kill(process.pid, type);

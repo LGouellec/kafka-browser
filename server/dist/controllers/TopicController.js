@@ -14,46 +14,38 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const TokenProvider_1 = __importDefault(require("../idp/TokenProvider"));
 const KafkaClient_1 = __importDefault(require("../kafka/KafkaClient"));
-class LoginController {
-    login(req, res) {
+class TopicController {
+    getTopics(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const client = new KafkaClient_1.default();
             const tokenProvider = new TokenProvider_1.default();
-            const user = req.query.user;
-            const pwd = req.query.password;
-            const response = yield client.login(user, pwd);
-            if (response) {
-                const tokenResponse = tokenProvider.generate(user);
-                tokenProvider.add(tokenResponse.token, user, pwd, tokenResponse.expirationDate);
-                res.send({
-                    token: tokenResponse.token,
-                    maxAge: tokenResponse.expireTime,
-                    expireDate: tokenResponse.expirationDate
-                });
-                res.end();
-            }
-            else {
-                return res.status(401).end();
-            }
+            const t = req.header("authorization");
+            const tokenInfo = tokenProvider.get(t);
+            const topics = yield client.getAllTopics(tokenInfo.user, tokenInfo.password);
+            res.send(topics);
         });
     }
-    refresh(req, res) {
+    getConfig(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const token = req.header("authorization");
+            const client = new KafkaClient_1.default();
             const tokenProvider = new TokenProvider_1.default();
-            var tokenInfo = tokenProvider.refresh(token);
-            if (tokenInfo) {
-                res.send({
-                    token: tokenInfo.token,
-                    maxAge: tokenInfo.expireTime,
-                    expireDate: tokenInfo.expirationDate
-                }).end();
-            }
-            else
-                return res.status(400).end();
+            const t = req.header("authorization");
+            const tokenInfo = tokenProvider.get(t);
+            const configs = yield client.getConfig(tokenInfo.user, tokenInfo.password, req.params.topicName);
+            res.send(configs);
+        });
+    }
+    getOffsets(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const client = new KafkaClient_1.default();
+            const tokenProvider = new TokenProvider_1.default();
+            const t = req.header("authorization");
+            const tokenInfo = tokenProvider.get(t);
+            const offsets = yield client.getOffsets(tokenInfo.user, tokenInfo.password, req.params.topicName);
+            res.send(offsets);
         });
     }
 }
-exports.LoginController = LoginController;
-exports.default = LoginController;
-//# sourceMappingURL=LoginController.js.map
+exports.TopicController = TopicController;
+exports.default = TopicController;
+//# sourceMappingURL=TopicController.js.map
