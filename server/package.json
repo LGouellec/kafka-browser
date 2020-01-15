@@ -2,6 +2,7 @@
   "name": "server",
   "version": "1.0.0",
   "dependencies": {
+    "@kafkajs/confluent-schema-registry": "^1.0.2",
     "@types/express": "^4.17.2",
     "@types/jsonwebtoken": "^8.3.5",
     "@types/node": "^13.1.6",

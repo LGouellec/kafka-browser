@@ -10,7 +10,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const kafkajs_1 = require("kafkajs");
+const confluent_schema_registry_1 = require("@kafkajs/confluent-schema-registry");
 class KafkaClient {
+    constructor() {
+        this.groupId = "kafka-browser-client";
+        this.registryUrl = undefined;
+        this.registry = undefined;
+        if (process.env.REGISTRY) {
+            this.registryUrl = process.env.REGISTRY;
+            this.registry = new confluent_schema_registry_1.SchemaRegistry({ host: this.registryUrl });
+        }
+    }
     login(user, password) {
         return __awaiter(this, void 0, void 0, function* () {
             var kafka = this.createKafkaClient(user, password);
@@ -127,6 +137,47 @@ class KafkaClient {
             finally {
                 yield admin.disconnect();
             }
+        });
+    }
+    consume(user, password, topicName, partition, seek, offset) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var kafka = this.createKafkaClient(user, password);
+            var offsets = yield this.getOffsets(user, password, topicName);
+            const admin = kafka.admin();
+            // Reset offset to begin
+            yield admin.setOffsets({
+                groupId: this.groupId,
+                topic: topicName,
+                partitions: offsets.map(o => {
+                    return {
+                        partition: o.partition,
+                        offset: o.low.toString()
+                    };
+                })
+            });
+            const consumer = kafka.consumer({ groupId: this.groupId });
+            yield consumer.connect();
+            yield consumer.subscribe({ topic: topicName, fromBeginning: true });
+            var promise = new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                var array = new Array();
+                yield consumer.run({
+                    partitionsConsumedConcurrently: 3,
+                    autoCommitThreshold: 200,
+                    eachMessage: ({ topic, partition, message }) => __awaiter(this, void 0, void 0, function* () {
+                        if (this.registry) {
+                            const decodedKey = yield this.registry.decode(message.key);
+                            const decodedValue = yield this.registry.decode(message.value);
+                            console.log({ decodedKey, decodedValue });
+                        }
+                        array.push(message);
+                    })
+                });
+                setTimeout(() => __awaiter(this, void 0, void 0, function* () {
+                    yield consumer.disconnect();
+                    resolve(array);
+                }), 2000);
+            }));
+            return promise;
         });
     }
     getClientId() { return process.env.CLIENT_ID || "kafka-browser-server"; }

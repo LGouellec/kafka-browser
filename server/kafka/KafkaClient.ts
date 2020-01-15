@@ -1,4 +1,5 @@
 import { Kafka, ResourceTypes, DescribeConfigResponse } from "kafkajs";
+import { SchemaRegistry }  from '@kafkajs/confluent-schema-registry';
 
 export interface KafkaPartition {
 	partitionErrorCode: number;
@@ -34,6 +35,17 @@ export interface KafkaTopicOffset{
 }
 
 export class KafkaClient {
+
+	private groupId: string = "kafka-browser-client"
+	private readonly registryUrl: string = undefined;
+	private readonly registry: SchemaRegistry = undefined;
+
+	constructor() {
+		if (process.env.REGISTRY) {
+			this.registryUrl = process.env.REGISTRY;
+			this.registry = new SchemaRegistry({ host: this.registryUrl });
+		}
+	}
 
 	public async login(user: string, password: string): Promise<boolean> {
 		var kafka = this.createKafkaClient(user, password);
@@ -150,6 +162,52 @@ export class KafkaClient {
 		} finally {
 			await admin.disconnect();
 		}
+	}
+	
+	public async consume(user: string, password: string, topicName: string, partition: string | number, seek: string, offset: number) : Promise<Array<any>>{
+
+		var kafka = this.createKafkaClient(user, password);
+		var offsets = await this.getOffsets(user, password, topicName);
+		const admin = kafka.admin();
+		// Reset offset to begin
+		await admin.setOffsets({
+			groupId: this.groupId,
+			topic: topicName,
+			partitions: offsets.map(o => {
+				return {
+					partition: o.partition,
+					offset: o.low.toString()
+				}
+			})
+		});
+
+		const consumer = kafka.consumer({ groupId: this.groupId })
+		await consumer.connect();
+		await consumer.subscribe({ topic: topicName, fromBeginning: true });
+
+		var promise = new Promise<Array<any>>(async (resolve, reject) => {
+			var array = new Array();
+			
+			await consumer.run({
+				partitionsConsumedConcurrently: 3,
+				autoCommitThreshold: 200,
+				eachMessage: async ({ topic, partition, message }) => {
+					if (this.registry) {
+						const decodedKey = await this.registry.decode(message.key);
+						const decodedValue = await this.registry.decode(message.value);
+						console.log({ decodedKey, decodedValue });
+					}
+					array.push(message);
+				}
+			});
+
+			setTimeout(async () => {
+				await consumer.disconnect();
+				resolve(array);
+			}, 2000);
+		});
+
+		return promise;
 	}
 	
 	private getClientId(): string { return process.env.CLIENT_ID || "kafka-browser-server"; }

@@ -4,12 +4,14 @@ import bodyParser from "body-parser";
 import express from "express";
 import LoginController from "./controllers/LoginController";
 import TopicController from "./controllers/TopicController";
+import ConsumerController from "./controllers/ConsumerController";
 import applyMiddlewares from './middlewares/Middleware';
 
 const app = express();
 const port = process.env.PORT || 5000;
 const login = new LoginController();
 const topic = new TopicController();
+const consumer = new ConsumerController();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -21,8 +23,7 @@ app.get("/api/refresh", login.refresh);
 app.get("/api/topics", topic.getTopics);
 app.get("/api/topics/:topicName/config", topic.getConfig);
 app.get("/api/topics/:topicName/offsets", topic.getOffsets);
-// TODO :
-app.get("/api/consumers/:topicName", (r,s) => {});
+app.get("/api/consumers/:topicName", consumer.consume);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
 
