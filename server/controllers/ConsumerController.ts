@@ -15,8 +15,8 @@ export class ConsumerController {
         const tokenProvider = new TokenProvider();
         const t = req.header("authorization");
         const tokenInfo = tokenProvider.get(t);
-        var body = req.body as ConsumeBody;
-        
+        const body = req.body as ConsumeBody;
+
         const messages = await client.consume(tokenInfo.user, tokenInfo.password, req.params.topicName, body.partition, body.seek, body.offset);
         res.send(messages);
     }

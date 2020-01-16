@@ -33,7 +33,7 @@ export class Login extends React.Component<LoginProps, LoginState>{
                 {
                     var body = await response.json();
                     localStorage.setItem("token", body.token);
-                    this.props.history.push('/dashboard');
+                    this.props.history.push('/');
                 }
             })
     }

@@ -27,16 +27,16 @@ export class LoginController {
     public async refresh(req: Request, res: Response) {
         const token = req.header("authorization");
         const tokenProvider = new TokenProvider();
-        var tokenInfo = tokenProvider.refresh(token);
-        if(tokenInfo){
+        const tokenInfo = tokenProvider.refresh(token);
+        if (tokenInfo) {
             res.send({
                 token: tokenInfo.token,
                 maxAge: tokenInfo.expireTime,
                 expireDate: tokenInfo.expirationDate
             }).end();
-        }
-        else
+        } else {
           return res.status(400).end();
+        }
     }
 }
 

@@ -2,10 +2,10 @@
 // https://www.npmjs.com/package/@kafkajs/confluent-schema-registry
 import bodyParser from "body-parser";
 import express from "express";
+import ConsumerController from "./controllers/ConsumerController";
 import LoginController from "./controllers/LoginController";
 import TopicController from "./controllers/TopicController";
-import ConsumerController from "./controllers/ConsumerController";
-import applyMiddlewares from './middlewares/Middleware';
+import applyMiddlewares from "./middlewares/Middleware";
 
 const app = express();
 const port = process.env.PORT || 5000;

@@ -1,12 +1,12 @@
-import { Kafka, ResourceTypes, DescribeConfigResponse } from "kafkajs";
-import { SchemaRegistry }  from '@kafkajs/confluent-schema-registry';
+import { SchemaRegistry }  from "@kafkajs/confluent-schema-registry";
+import { DescribeConfigResponse, Kafka, ResourceTypes } from "kafkajs";
 
 export interface KafkaPartition {
 	partitionErrorCode: number;
 	partitionId: number;
 	leader: number;
-	replicas: Array<number>;
-	isr: Array<number>;
+	replicas: number[];
+	isr: number[];
 }
 
 export interface KafkaTopic {
@@ -21,22 +21,25 @@ export interface KafkaConfig {
 }
 
 export interface KafkaConfigEntry {
-	configName: string
-	configValue: string
-	isDefault: boolean
-	readOnly: boolean
+	configName: string;
+	configValue: string;
+	isDefault: boolean;
+	readOnly: boolean;
 }
 
-export interface KafkaTopicOffset{
+export interface KafkaTopicOffset {
 	partition: number;
 	offset: number;
 	high: number;
 	low: number;
 }
 
+// TODO : Change to https://github.com/Blizzard/node-rdkafka for performance gain
+// https://github.com/SOHU-Co/kafka-node/#admin
+
 export class KafkaClient {
 
-	private groupId: string = "kafka-browser-client"
+	private groupId: string = "kafka-browser-client";
 	private readonly registryUrl: string = undefined;
 	private readonly registry: SchemaRegistry = undefined;
 
@@ -48,7 +51,7 @@ export class KafkaClient {
 	}
 
 	public async login(user: string, password: string): Promise<boolean> {
-		var kafka = this.createKafkaClient(user, password);
+		const kafka = this.createKafkaClient(user, password);
 
 		const admin = kafka.admin();
 		try {
@@ -62,7 +65,7 @@ export class KafkaClient {
 	}
 
 	public async getAllTopics(user: string, password: string): Promise<KafkaTopic[]> {
-		var kafka = this.createKafkaClient(user, password);
+		const kafka = this.createKafkaClient(user, password);
 
 		const admin = kafka.admin();
 
@@ -72,7 +75,7 @@ export class KafkaClient {
 			return res.topics.map((e) => {
 				return {
 					topic: e.name,
-					partitions: e.partitions.map(p => {
+					partitions: e.partitions.map((p) => {
 						return {
 							partitionErrorCode: p.partitionErrorCode,
 							partitionId: p.partitionId,
@@ -92,13 +95,13 @@ export class KafkaClient {
 
 	public async getConfig(user: string, password: string, topicName: string): Promise<KafkaConfig> {
 
-		var kafka = this.createKafkaClient(user, password);
+		const kafka = this.createKafkaClient(user, password);
 
 		const admin = kafka.admin();
 
 		try {
 			await admin.connect();
-			var response = await admin.describeConfigs({
+			const response = await admin.describeConfigs({
 				includeSynonyms: false,
 				resources: [
 					{
@@ -108,9 +111,8 @@ export class KafkaClient {
 				]
 			});
 
-			var rsType = "UNKNOWN"
-			switch(response.resources[0].resourceType)
-			{
+			let rsType = "UNKNOWN";
+			switch (response.resources[0].resourceType) {
 				case ResourceTypes.TOPIC:
 					rsType = "TOPIC";
 					break;
@@ -125,13 +127,13 @@ export class KafkaClient {
 			return {
 				resourceName: response.resources[0].resourceName,
 				resourceType: rsType,
-				config: response.resources[0].configEntries.map(c => {
+				config: response.resources[0].configEntries.map((c) => {
 					return {
 						configName: c.configName,
 						configValue: c.configValue,
 						isDefault: c.isDefault,
 						readOnly: c.readOnly
-					}
+					};
 				})
 			};
 		} catch (KafkaJSConnectionError) {
@@ -141,53 +143,53 @@ export class KafkaClient {
 		}
 	}
 
-	public async getOffsets(user: string, password: string, topicName: string): Promise<Array<KafkaTopicOffset>> {
+	public async getOffsets(user: string, password: string, topicName: string): Promise<KafkaTopicOffset[]> {
 
-		var kafka = this.createKafkaClient(user, password);
+		const kafka = this.createKafkaClient(user, password);
 		const admin = kafka.admin();
 
 		try {
 			await admin.connect();
-			var response = await admin.fetchTopicOffsets(topicName);
-			return response.map(r => {
+			const response = await admin.fetchTopicOffsets(topicName);
+			return response.map((r) => {
 				return {
 					partition: r.partition,
 					offset: +r.offset,
 					high: +r.high,
 					low: +r.low,
-				}
-			})
+				};
+			});
 		} catch (KafkaJSConnectionError) {
 			return undefined;
 		} finally {
 			await admin.disconnect();
 		}
 	}
-	
-	public async consume(user: string, password: string, topicName: string, partition: string | number, seek: string, offset: number) : Promise<Array<any>>{
 
-		var kafka = this.createKafkaClient(user, password);
-		var offsets = await this.getOffsets(user, password, topicName);
+	public async consume(user: string, password: string, topicName: string, partition: string | number, seek: string, offset: number): Promise<any[]> {
+
+		const kafka = this.createKafkaClient(user, password);
+		const offsets = await this.getOffsets(user, password, topicName);
 		const admin = kafka.admin();
 		// Reset offset to begin
 		await admin.setOffsets({
 			groupId: this.groupId,
 			topic: topicName,
-			partitions: offsets.map(o => {
+			partitions: offsets.map((o) => {
 				return {
 					partition: o.partition,
 					offset: o.low.toString()
-				}
+				};
 			})
 		});
 
-		const consumer = kafka.consumer({ groupId: this.groupId })
+		const consumer = kafka.consumer({ groupId: this.groupId });
 		await consumer.connect();
 		await consumer.subscribe({ topic: topicName, fromBeginning: true });
 
-		var promise = new Promise<Array<any>>(async (resolve, reject) => {
-			var array = new Array();
-			
+		const promise = new Promise<any[]>(async (resolve, reject) => {
+			const array = new Array();
+
 			await consumer.run({
 				partitionsConsumedConcurrently: 3,
 				autoCommitThreshold: 200,
@@ -209,7 +211,7 @@ export class KafkaClient {
 
 		return promise;
 	}
-	
+
 	private getClientId(): string { return process.env.CLIENT_ID || "kafka-browser-server"; }
 	private getbrokers(): string[] { return process.env.BROKERS ? process.env.BROKERS.split(",") : ["192.168.56.1:9092"]; }
 

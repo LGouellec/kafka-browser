@@ -108,14 +108,6 @@ export default withRouter(function Home() {
     const [open, setOpen] = React.useState(false);
     const isMenuOpen = Boolean(anchorEl);
 
-    const handleDrawerOpen = () => {
-        setOpen(true);
-    };
-
-    const handleDrawerClose = () => {
-        setOpen(false);
-    };
-
     const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
     };
@@ -128,12 +120,7 @@ export default withRouter(function Home() {
         localStorage.removeItem('token');
     }
 
-    const loggedIn = () => {
-        if(localStorage.getItem("token"))
-            return true
-        else
-            return false;
-    }
+    const isLoggedIn = () => localStorage.getItem("token");
 
     const renderMenu = (
         <Menu
@@ -145,7 +132,7 @@ export default withRouter(function Home() {
             open={isMenuOpen}
             onClose={handleMenuClose}
         >
-            {loggedIn() ? <MenuItem onClick={logout}>Log Out</MenuItem> : <div></div>}
+            {isLoggedIn() ? <MenuItem onClick={logout}>Log Out</MenuItem> : <div></div>}
         </Menu>
     );
 
@@ -160,15 +147,6 @@ export default withRouter(function Home() {
                         })}
                     >
                         <Toolbar>
-                            <IconButton
-                                color="inherit"
-                                aria-label="open drawer"
-                                onClick={handleDrawerOpen}
-                                edge="start"
-                                className={clsx(classes.menuButton, open && classes.hide)}
-                            >
-                                <MenuIcon />
-                            </IconButton>
                             <IconButton
                                 edge="end"
                                 aria-label="account of current user"
@@ -185,52 +163,19 @@ export default withRouter(function Home() {
                         </Toolbar>
                     </AppBar>
                     {renderMenu}
-                    <Drawer
-                        className={classes.drawer}
-                        variant="persistent"
-                        anchor="left"
-                        open={open}
-                        classes={{
-                            paper: classes.drawerPaper,
-                        }}
-                    >
-                        <div className={classes.drawerHeader}>
-                            <IconButton onClick={handleDrawerClose}>
-                                {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-                            </IconButton>
-                        </div>
-                        <Divider />
-                        <List>
-                            <ListItem button component={Link} to='/'>
-                                <ListItemIcon><HomeIcon /></ListItemIcon>
-                                <ListItemText primary="Home"></ListItemText>
-                            </ListItem>
-                            <ListItem button component={Link} to='/dashboard'>
-                                <ListItemIcon><DashboardIcon /></ListItemIcon>
-                                <ListItemText primary="Dashboard"></ListItemText>
-                            </ListItem>
-                        </List>
-                    </Drawer>
                     <main
                         className={clsx(classes.content, {
                             [classes.contentShift]: open,
                         })}
-                    >
-                        <div className={classes.drawerHeader} />
-                        <Switch>
-                            <Route path="/dashboard" >
-                                {!loggedIn() ? <Redirect to="/login" /> : <Dashboard />}
-                            </Route>
-                            <Route path="/login" component={Login} />
-                            <Route exact path="/">
-                                <div>
-                                    Welcome to Kafka Browser Application (alpha version).
-                                    Designed with React/Typescript.
-                                    Material UI for design https://material-ui.com/
-                            </div>
-                            </Route>
-                        </Switch>
-                    </main>
+                >
+                    <div className={classes.drawerHeader} />
+                    <Switch>
+                        <Route exact path="/login" component={Login} />
+                        <Route exact path="/">
+                            {!isLoggedIn() ? <Redirect to="/login" /> : <Dashboard />}
+                        </Route>
+                    </Switch>
+                </main>
             </div>
         </ThemeProvider>
     );

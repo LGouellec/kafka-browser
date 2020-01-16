@@ -1,29 +1,31 @@
-import React from 'react';
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosPromise } from 'axios';
+import React, { RefObject } from 'react';
+import PannelTopics from './PannelTopics';
+import TopicViewer from './TopicViewer';
+
+import Grid from '@material-ui/core/Grid';
 
 export class Dashboard extends React.Component<{}, {}>{
-    private _client: AxiosInstance = axios.create({});
+
+    private readonly viewer: RefObject<TopicViewer>;
 
     constructor(props: {}, context: {}) {
         super(props, context);
-    }
-
-    componentDidMount() {
-        this._client.request({
-            method: 'GET',
-            url: '/api/topics',
-            headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem("token")
-            }
-        }).then(async (response) => {
-            console.log(response.data);
-        })
+        this.viewer = React.createRef<TopicViewer>();
     }
 
     render() {
         return (
             <div>
-                DashBoard
+                <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                        <PannelTopics topicChanged={(topic) => {
+                            this.viewer.current?.topicChanged(topic);
+                        }} />
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TopicViewer ref={this.viewer} />
+                    </Grid>
+                </Grid>
             </div>
         );
     }

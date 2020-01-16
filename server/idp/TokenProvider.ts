@@ -9,9 +9,9 @@ export interface TokenInformation {
 }
 
 export class TokenExpired implements TokenInformation {
-    expirationDate: Date;    
-    user: string;
-    password: string;
+    public expirationDate: Date;
+    public user: string;
+    public password: string;
 }
 
 export interface TokenResponse {
@@ -32,7 +32,7 @@ export class TokenProvider {
         const e = TokenProvider.tokens[token] ? TokenProvider.tokens[token] : null;
         if (e) {
             if (Date.now() > new Number(e.expirationDate)) {
-                var t = new TokenExpired();
+                const t = new TokenExpired();
                 t.expirationDate = e.expirationDate;
                 t.user = e.user;
                 t.password = undefined;
@@ -54,32 +54,33 @@ export class TokenProvider {
         }
     }
 
-    public refresh(token: string) : TokenResponse {
-        var tokenInfo = this.get(token);
+    public refresh(token: string): TokenResponse {
+        const tokenInfo = this.get(token);
         if (tokenInfo) {
-            var response = this.generate(tokenInfo.user);
+            const response = this.generate(tokenInfo.user);
             this.add(response.token, tokenInfo.user, tokenInfo.password, response.expirationDate);
             delete TokenProvider.tokens[token];
             return response;
         }
     }
 
-    public verify(token: string) : TokenInformation {
-        var payload
+    public verify(token: string): TokenInformation {
+        let payload;
         try {
-            payload = jwt.verify(token, TokenProvider.privateKey)
-            if(payload)
+            payload = jwt.verify(token, TokenProvider.privateKey);
+            if (payload) {
                 return this.get(token);
-            else
+            } else {
                 return undefined;
+            }
         } catch (e) {
             if (e instanceof jwt.JsonWebTokenError) {
-                if (TokenProvider.tokens[token]){
+                if (TokenProvider.tokens[token]) {
                     TokenProvider.tokens[token] = undefined;
                     return new TokenExpired();
-                }
-                else
+                } else {
                   return undefined;
+                }
             }
             return undefined;
         }
@@ -91,7 +92,7 @@ export class TokenProvider {
             iss: "http://localhost",
             permissions: "read-topics"
         };
-        
+
         const token = jwt.sign({ user }, TokenProvider.privateKey, {
             algorithm: "HS256",
             expiresIn: this.jwtExpirySeconds

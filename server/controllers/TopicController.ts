@@ -14,7 +14,7 @@ export class TopicController {
         res.send(topics);
     }
 
-    public async getConfig(req: Request, res: Response){
+    public async getConfig(req: Request, res: Response) {
         const client = new KafkaClient();
         const tokenProvider = new TokenProvider();
         const t = req.header("authorization");
@@ -24,7 +24,7 @@ export class TopicController {
         res.send(configs);
     }
 
-    public async getOffsets(req: Request, res: Response){
+    public async getOffsets(req: Request, res: Response) {
         const client = new KafkaClient();
         const tokenProvider = new TokenProvider();
         const t = req.header("authorization");
